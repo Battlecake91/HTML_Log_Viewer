@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Logfile Viewer</title>
+    <!-- Einbindung von Highlight.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+        }
+        #controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #filterInput {
+            width: 50%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #logContainer {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            height: 600px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .highlight-error {
+            background-color: #ff5555;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .highlight-warning {
+            background-color: #f1fa8c;
+            color: #282a36;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        /* Weitere Highlight-Klassen können hier hinzugefügt werden */
+    </style>
+</head>
+<body>
+
+<h1>Logfile Viewer</h1>
+
+<div id="controls">
+    <input type="text" id="filterInput" placeholder="Filter logs...">
+</div>
+
+<div id="logContainer">
+    <!-- Loginhalt wird hier angezeigt -->
+</div>
+
+<!-- Einbindung von Highlight.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script>
+    // Konfiguration
+    const LOGFILE_URL = 'path/to/your/logfile.log'; // Pfad zur Logdatei
+    const FETCH_INTERVAL = 5000; // Aktualisierungsintervall in Millisekunden
+
+    // Highlighting-Regeln
+    const highlightingRules = [
+        {
+            pattern: /ERROR/g,
+            className: 'highlight-error'
+        },
+        {
+            pattern: /WARN/g,
+            className: 'highlight-warning'
+        }
+        // Weitere Regeln können hier hinzugefügt werden
+    ];
+
+    const logContainer = document.getElementById('logContainer');
+    const filterInput = document.getElementById('filterInput');
+    let fullLogContent = '';
+
+    // Funktion zum Abrufen der Logdatei
+    async function fetchLogfile() {
+        try {
+            const response = await fetch(LOGFILE_URL, { cache: "no-store" });
+            if (!response.ok) {
+                logContainer.textContent = `Fehler beim Laden der Logdatei: ${response.status} ${response.statusText}`;
+                return;
+            }
+            const text = await response.text();
+            fullLogContent = text;
+            updateLogDisplay();
+        } catch (error) {
+            logContainer.textContent = `Fehler: ${error.message}`;
+        }
+    }
+
+    // Funktion zum Anwenden von Filtern und Highlighting
+    function updateLogDisplay() {
+        let displayContent = fullLogContent;
+
+        // Anwenden des Filters
+        const filterValue = filterInput.value.trim().toLowerCase();
+        if (filterValue) {
+            const filteredLines = displayContent.split('\n').filter(line => line.toLowerCase().includes(filterValue));
+            displayContent = filteredLines.join('\n');
+        }
+
+        // Anwenden des Highlightings
+        highlightingRules.forEach(rule => {
+            displayContent = displayContent.replace(rule.pattern, match => `<span class="${rule.className}">${match}</span>`);
+        });
+
+        // Setzen des HTML-Inhalts und Scrollen nach unten
+        logContainer.innerHTML = displayContent;
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    // Event Listener für den Filter
+    filterInput.addEventListener('input', updateLogDisplay);
+
+    // Initiales Laden der Logdatei
+    fetchLogfile();
+
+    // Periodisches Aktualisieren der Logdatei
+    setInterval(fetchLogfile, FETCH_INTERVAL);
+</script>
+</body>
+</html>
